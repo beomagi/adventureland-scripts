@@ -23,7 +23,7 @@ setInterval(function(){
     if (!is_on_cooldown('regen_mp')){use_skill('regen_mp');}
     if (!is_on_cooldown('regen_hp')){use_skill('regen_hp');}
 
-},1000/10); // Loops every 1/4 seconds.
+},1000/10); // Loops every 1/10 seconds.
 
 
 function checkmove(){
@@ -48,12 +48,6 @@ function checkmove(){
             }
             attack(target);
         }
-        //update dx,dy since attatck takes time!
-        //dx=target.x-character.x;
-        //dy=target.y-character.y;
-        //tdistance=Math.hypot(dx,dy);
-        //unitx=dx/tdistance;
-        //unity=dy/tdistance;
         maxx=unitx*character.range;
         maxy=unity*character.range;
         newpos=rotateabout(target.x,target.y,character.x,character.y,0.35);
