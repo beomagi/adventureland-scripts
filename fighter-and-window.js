@@ -170,9 +170,9 @@ function updatewindow()
         var tempdiv = document.createElement("div");
         tempdiv.id = "genericnoobstatuswindow";
         tempdiv.innerHTML = "testing<br/>testing<br/>testing";
-        tempdiv.style.backgroundColor ="#FFFF00";
-        tempdiv.style.color="#000000";
-		tempdiv.style.opacity=0.8;
+        tempdiv.style.backgroundColor ="#121200";
+        tempdiv.style.color="#ffffff";
+		tempdiv.style.opacity=0.7;
         tempdiv.style.font="Consolas";
         tempdiv.style.fontSize="1.2em";
         tempdiv.style.zIndex=2147483647;
@@ -181,6 +181,9 @@ function updatewindow()
         tempdiv.style.left="0px";
         tempdiv.style.padding="5px";
         tempdiv.style.margin="0px";
+        tempdiv.style.borderColor="#ffff00";
+        tempdiv.style.borderWidth=2;
+        tempdiv.style.borderStyle="solid";
         parent.$("body").append(tempdiv);
         dragstatuswindow(tempdiv);
 		statusdiv=tempdiv
