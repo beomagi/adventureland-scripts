@@ -21,17 +21,21 @@ function updatewindow()
         var tempdiv = document.createElement("div");
         tempdiv.id = "genericnoobstatuswindow";
         tempdiv.innerHTML = "testing<br/>testing<br/>testing";
-        tempdiv.style.backgroundColor ="#FFFF00";
-        tempdiv.style.color="#000000";
-		tempdiv.style.opacity=0.8;
-        tempdiv.style.font="Consolas";
-        tempdiv.style.fontSize="1.2em";
+        tempdiv.style.backgroundColor ="#121200";
+        tempdiv.style.color="#ffffff";
+		tempdiv.style.opacity=0.7;
+        tempdiv.style.fontFamily="monospace";
+        tempdiv.style.fontSize="1.1em";
+        tempdiv.style.fontWeight=900;
         tempdiv.style.zIndex=2147483647;
         tempdiv.style.position="absolute";
         tempdiv.style.top="0px";
         tempdiv.style.left="0px";
         tempdiv.style.padding="5px";
         tempdiv.style.margin="0px";
+        tempdiv.style.borderColor="#ffff00";
+        tempdiv.style.borderWidth=2;
+        tempdiv.style.borderStyle="solid";
         parent.$("body").append(tempdiv);
         dragstatuswindow(tempdiv);
 		statusdiv=tempdiv
@@ -45,6 +49,7 @@ function updatewindow()
         stext+="XP per minute: "+(60*statusinfo.xprate).toFixed(2)+"<br/>";
         stext+="Time till level: "+statusinfo.time2level.toFixed(0)+"<br/>";
         stext+="Kill all: "+statusinfo.lastenemy+"<br/>"
+        stext+="Party: <br/>"+statusinfo.party+"<br/>"
         stext+="----------------------------<br/>";
         stext+=statusinfo.doingwhat+"<br/>";
 
@@ -70,6 +75,15 @@ function updatestatusinfo(){
         statusinfo.startxp=character.xp;
         statusinfo.doingwhat="LEVELLING UP!";
     }
+    statusinfo.party="";
+    for(let p_name in parent.party){
+        p_hp=get_player(p_name).hp;
+        p_maxhp=get_player(p_name).max_hp;
+        p_mp=get_player(p_name).mp;
+        p_maxmp=get_player(p_name).max_mp;
+        statusinfo.party+=p_name.padEnd(10,'_')+(p_hp+"/"+p_maxhp).padEnd(10)+(p_mp+"/"+p_maxmp).padEnd(10)+"<br/>";
+    }
+    statusinfo.party=statusinfo.party.replace(/_/g,"&nbsp;");
 }
 
 //////////////modified from https://www.w3schools.com/howto/howto_js_draggable.asp////////////////
