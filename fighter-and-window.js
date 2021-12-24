@@ -22,13 +22,12 @@ statusinfo.lastenemy=lastenemytype;
 statusinfo.charlevel=character.level;
 
 
-
-
 parent.$("body").find("#genericnoobstatuswindow").remove();
 
 setInterval(function(){
 	use_hp_or_mp_2();
 	loot();
+    autopartyinvite();
 
 	if(!attack_mode || character.rip || is_moving(character)) return;
 
@@ -91,7 +90,11 @@ function fightercheckmove(target){
                 timenowepoch=timenowdate.getTime()/1000;
                 timethenepoch=lastcasttime.getTime()/1000;
                 if ((timenowdate-lastcasttime) > tauntcastdelay) {
-					var mytargettarget=get_entity(character.target).target
+                    if (get_entity(character.target)) {
+					    var mytargettarget=get_entity(character.target).target
+                    } else {
+                        var mytargettarget=null;
+                    }
 					if ((mytargettarget !== character.name) && mytargettarget) {
                     	use_skill("taunt",target);
 				    	lastcasttime=new Date();
@@ -162,6 +165,26 @@ function rotateabout(targetx,targety,ogx,ogy,angle)
     return([x2,y2]);
 }
 
+
+var autoinvitelist=["BeoNuka","BeoHP"];
+var autoinvitelisttimer={};
+
+function autopartyinvite(){
+    var timenow=Date.now()/1000;
+    autoinvitelist.forEach(function(charname){
+        if (!(charname in parent.party)) {
+            if (!(charname in autoinvitelisttimer)) {
+                send_party_invite(charname);
+                autoinvitelisttimer[charname]=timenow;
+            } else {
+                if (timenow-autoinvitelisttimer[charname] > 10){
+                    delete(autoinvitelisttimer[charname]);
+                }
+            }
+        }
+    });
+}
+
 parent.$("body").find("#genericnoobstatuswindow").remove();
 function updatewindow()
 {	
@@ -173,8 +196,9 @@ function updatewindow()
         tempdiv.style.backgroundColor ="#121200";
         tempdiv.style.color="#ffffff";
 		tempdiv.style.opacity=0.7;
-        tempdiv.style.font="Consolas";
-        tempdiv.style.fontSize="1.2em";
+        tempdiv.style.fontFamily="monospace";
+        tempdiv.style.fontSize="1.1em";
+        tempdiv.style.fontWeight=900;
         tempdiv.style.zIndex=2147483647;
         tempdiv.style.position="absolute";
         tempdiv.style.top="0px";
@@ -197,6 +221,7 @@ function updatewindow()
         stext+="XP per minute: "+(60*statusinfo.xprate).toFixed(2)+"<br/>";
         stext+="Time till level: "+statusinfo.time2level.toFixed(0)+"<br/>";
         stext+="Kill all: "+statusinfo.lastenemy+"<br/>"
+        stext+="Party: <br/>"+statusinfo.party+"<br/>"
         stext+="----------------------------<br/>";
         stext+=statusinfo.doingwhat+"<br/>";
 
@@ -222,6 +247,15 @@ function updatestatusinfo(){
         statusinfo.startxp=character.xp;
         statusinfo.doingwhat="LEVELLING UP!";
     }
+    statusinfo.party="";
+    for(let p_name in parent.party){
+        p_hp=get_player(p_name).hp;
+        p_maxhp=get_player(p_name).max_hp;
+        p_mp=get_player(p_name).mp;
+        p_maxmp=get_player(p_name).max_mp;
+        statusinfo.party+=p_name.padEnd(10,'_')+(p_hp+"/"+p_maxhp).padEnd(10)+(p_mp+"/"+p_maxmp).padEnd(10)+"<br/>";
+    }
+    statusinfo.party=statusinfo.party.replace(/_/g,"&nbsp;");
 }
 
 //////////////modified from https://www.w3schools.com/howto/howto_js_draggable.asp////////////////
