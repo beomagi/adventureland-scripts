@@ -1,35 +1,21 @@
-// Hey there!
-// This is CODE, lets you control your character with code.
-// If you don't know how to code, don't worry, It's easy.
-// Just set attack_mode to true and ENGAGE!
-
 var attack_mode=true;
-var followleader=true;
-var circlestrafe=true;
-var castdelay=40;
 var doattacks=true;
+var lastcasttime=0;
+var followleader=true;
 var waitfortaroftar=true;
-var leader_to_enemy_ratio=0.9;
-var move_back_and_forth=true;
-var lastcasttime=new Date();
-var reduce_max_range=0.55;
 
 setInterval(function(){
 	use_hp_or_mp_2();
+	autoacceptpartyinvite();
 	loot();
-    autoacceptpartyinvite();
 	if(!attack_mode || character.rip || is_moving(character)) return;
+	runawayfrombadguysbutstaynearpartylead();
+	targetandattack();
+},1000/10); // Loops every 1/10 seconds.
 
-	if (!followleader) {
-		var target=get_targeted_monster();
-	} else {
-		var leadername=character.party;
-		var leaderobj=get_player(leadername);
-		var target = get_target_of(leaderobj);
-		var tarOftar = get_target_of(target);
-        doattacks=true;
-		if ((!tarOftar) && (waitfortaroftar)){ doattacks=false; }
-	}
+
+function targetandattack(){
+	var castdelay=20;
 	if(!target)
 	{
 		target=get_nearest_monster({min_xp:100,max_att:120});
@@ -39,107 +25,109 @@ setInterval(function(){
 			return; 
 		}
 	}
-	
-	magecheckmove(target);
-},1000/10); // Loops every 1/10 seconds.
-
-function magecheckmove(target){
-    if (followleader) {
-        var leaderobj=get_player(character.party)
-        var midx=leader_to_enemy_ratio*leaderobj.x+(1-leader_to_enemy_ratio)*target.x;
-        var midy=leader_to_enemy_ratio*leaderobj.y+(1-leader_to_enemy_ratio)*target.y;
-        var dx=midx-character.x;
-        var dy=midy-character.y;
-        var followx=midx;
-        var followy=midy;
-    } else {
-        var dx=target.x-character.x;
-        var dy=target.y-character.y;
-        var followx=target.x;
-        var followy=target.y;
-    }
-
-    if(!is_in_range(target))
+	if (!followleader) {
+		var target=get_targeted_monster();
+	} else {
+		var leadername=character.party;
+		var leaderobj=get_player(leadername);
+		var target = get_target_of(leaderobj);
+		var tarOftar = get_target_of(target);
+        doattacks=true;
+		if ((!tarOftar) && (waitfortaroftar)){doattacks=false;}
+	}
+    if(!is_in_range(target) && (target))
     {
+		var dx=target.x-character.x;
+        var dy=target.y-character.y;
         littlex=dx*0.1;
         littley=dy*0.1;
-        move(character.x+littlex,character.y+littley);
+        //move(character.x+littlex,character.y+littley);
     } else {
-        set_message("Atk:"+character.x.toFixed(0)+","+character.y.toFixed(0));
-        /////////////////////attack section/////////////////////
-        if(can_attack(target) && doattacks){
+		if(can_attack(target) && doattacks){
             if (!is_on_cooldown("burst")){
-                timenowdate=new Date();
-                timenowepoch=timenowdate.getTime()/1000;
-                timethenepoch=lastcasttime.getTime()/1000;
-                if ((timenowdate-lastcasttime) > castdelay) {
+                timenowepoch=Date.now()/1000;                
+                if ((timenowepoch-lastcasttime) > castdelay) {
                     //use_skill("burst",target);
-				    lastcasttime=new Date();
+				    lastcasttime=Date.now()/1000;
                 }
             }
             attack(target);
-        }
-        /////////////////////attack section/////////////////////
-		var tnow=new Date();
-        if (move_back_and_forth) {
-            var movedecide=(tnow.getTime()/1000)%3;            
-		    var backforth=-1;
-            if (movedecide>1) backforth=1;
-        } else {
-            var backforth=1;
-        }
-        if (!circlestrafe) {backforth=0;}
-		newpos=rotateabout(
-            followx,
-            followy,
-            character.x,
-            character.y,
-			0.05*backforth
-        );
-        kitex=newpos[0];
-        kitey=newpos[1];
-        ndx=kitex-followx;
-        ndy=kitey-followy;
-        ndistance=Math.hypot(ndx,ndy);
-        kitex=followx+(character.range*ndx*reduce_max_range)/ndistance;
-        kitey=followy+(character.range*ndy*reduce_max_range)/ndistance;
-        move(kitex,kitey);
-    }
-
+        }		
+	}
 }
-
-// Learn Javascript: https://www.codecademy.com/learn/introduction-to-javascript
-// Write your own CODE: https://github.com/kaansoral/adventureland
 
 function use_hp_or_mp_2()
 {
     if(safeties && mssince(last_potion)<min(200,character.ping*3)) return;
 
-    if (character.hp/character.max_hp<0.8){
+    //prioritize mp regen if low
+    if (character.mp/character.max_mp<0.80){ 
+        if (character.mp/character.max_mp>-1) {//disabled mana pot with -1
+            if (!is_on_cooldown('regen_mp')){use_skill('regen_mp');}
+        } else {use_skill('use_mp');}
+    }
+    //otherwise, heal asap - same cooldown as mp.
+    if (character.hp/character.max_hp<0.95){
         if (character.hp/character.max_hp>0.3) {
             if (!is_on_cooldown('regen_hp')){use_skill('regen_hp');}
-        } else {
-            use_skill('use_hp');
-        }
+        } else {use_skill('use_hp');}
     }
-    if (character.mp/character.max_mp<0.99){
-        if (character.mp/character.max_mp>-1) {
-            if (!is_on_cooldown('regen_mp')){use_skill('regen_mp');}
-        } else {
-            use_skill('use_hp');
-        }
-    }
+    //otherwise, keep mp as high as possible.
+    if (!is_on_cooldown('regen_mp')){use_skill('regen_mp');}
 }
 
-function rotateabout(targetx,targety,ogx,ogy,angle)
+
+function dist(x1,y1,x2,y2){
+	return Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2));
+}
+
+function getdangerxy(px,py){
+	var dangerzone=150; //consider enemies in this range "dangerous"
+	var danger=0;
+	for(id in parent.entities)
+	{
+		var current=parent.entities[id];
+		if(current.type=="monster"){
+			var cdist=dist(current.x,current.y,px,py);
+			if (cdist < dangerzone) {
+				danger+=1/Math.pow(cdist/150,0.5);
+			}
+		}
+	}
+	return danger;
+}
+
+function runawayfrombadguysbutstaynearpartylead()
 {
-    dx=ogx-targetx;
-    dy=ogy-targety;
-    cosA=Math.cos(angle);
-    sinA=Math.sin(angle);
-    x2=(cosA*dx-sinA*dy)+targetx;
-    y2=(sinA*dx+cosA*dy)+targety;
-    return([x2,y2]);
+	var ppts=[];
+	var healrange=character.range*0.33; //must be in this range to the leader
+	var maxwalk=character.range*0.66; //must be in this range to the leader
+	var leadername=character.party;
+	var leaderobj=get_player(leadername);
+	var leadx=leaderobj.x;
+	var leady=leaderobj.y;
+	var safex=leadx;
+	var safey=leady;
+	var saferate=99999;
+	for (let px = -120; px <= 120; px+=20) {
+		for (let py = -120; py <= 120; py+=20) {
+			newcx=safex+px;
+			newcy=safey+py;
+			if (can_move_to(newcx,newcy)) {
+				ldist=dist(newcx,newcy, leadx, leady);//leader dist
+				wdist=dist(newcx,newcy, character.x, character.y);//walk dist
+				if ((ldist<healrange) && (wdist<maxwalk)){ //withing walk range, and range from lead
+					pdanger=getdangerxy(newcx,newcy);				
+					if (pdanger<saferate){
+						saferate=pdanger;
+						safex=newcx;
+						safey=newcy;
+					}
+				}			
+			}
+		}
+	}
+	xmove(safex,safey);
 }
 
 

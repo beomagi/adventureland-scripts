@@ -4,14 +4,32 @@ var doattacks=true;
 
 setInterval(function(){
 	use_hp_or_mp_2();
+	autoacceptpartyinvite();
 	loot();
 	if(!attack_mode || character.rip || is_moving(character)) return;
 	runawayfrombadguysbutstaynearpartylead();
 	healpartymembers();
+	occasionallyattack();
 },1000/10); // Loops every 1/10 seconds.
 
+function occasionallyattack(){
+	var leadername=character.party;
+	var leaderobj=get_player(leadername);
+	var target = get_target_of(leaderobj);
+	var tarOftar = get_target_of(target);
+	var doattacks=true;
+	if (!tarOftar) doattacks=false;
+	if (doattacks) {
+		if(is_in_range(target) && (target))
+		{
+			if(can_attack(target)){
+				attack(target);
+			}		
+		}
+	}
+}
+
 function healpartymembers(){
-	//parent.ctarget=get_player("BeoNuka")
 	healwho=null;
 	healpriority=0;
 	for(let p_name in parent.party){
@@ -33,7 +51,7 @@ function use_hp_or_mp_2()
     if(safeties && mssince(last_potion)<min(200,character.ping*3)) return;
     //prioritize mp regen if low
     if (character.mp/character.max_mp<0.80){ 
-        if (character.mp/character.max_mp>-0.3) {
+        if (character.mp/character.max_mp>0.3) {
             if (!is_on_cooldown('regen_mp')){use_skill('regen_mp');}
         } else {use_skill('use_mp');}
     }
@@ -58,87 +76,48 @@ function getdangerxy(px,py){
 	for(id in parent.entities)
 	{
 		var current=parent.entities[id];
-		//if(current.type!="monster" || !current.visible || current.dead) continue;
-		//if(current.type!="monster" || current.dead) continue;
 		if(current.type=="monster"){
 			var cdist=dist(current.x,current.y,px,py);
 			if (cdist < dangerzone) {
 				danger+=1/Math.pow(cdist/150,0.5);
-				var e=draw_line(px,py,current.x,current.y,1,0xaa1100);
-				crosshairs.push(e);
 			}
 		}
 	}
 	return danger;
 }
 
-var crosshairs=[];
-function crosshair(cx,cy,color){
-	var e=draw_line(cx-5,cy,cx+5,cy,1,color);
-	crosshairs.push(e);
-	var e=draw_line(cx,cy-5,cx,cy+5,1,color);
-	crosshairs.push(e);
-}
-function clearcrosshairs(){
-	while (crosshairs.length>0){
-		e=crosshairs.pop();
-		e.destroy();
-	}
-}
 
 function runawayfrombadguysbutstaynearpartylead()
 {
 	var ppts=[];
-	var healrange=character.range*0.7; //must be in this range to the leader
+	var healrange=character.range*0.33; //must be in this range to the leader
+	var maxwalk=character.range*0.66; //must be in this range to the leader
 	var leadername=character.party;
 	var leaderobj=get_player(leadername);
 	var leadx=leaderobj.x;
 	var leady=leaderobj.y;
-	var charx=character.x;
-	var chary=character.y;
-	currentdistance=dist(leadx, leady, charx, chary);
-	if (currentdistance>healrange) {
-		dx=leadx-charx;
-		dy=leady-chary;
-		charx=leadx-dx*healrange/currentdistance;
-		chary=leady-dy*healrange/currentdistance;
-	}
-	var safex=charx;
-	var safey=chary;
+	var safex=leadx;
+	var safey=leady;
 	var saferate=99999;
-	clearcrosshairs();
-	for (let px = -80; px <= 80; px+=20) {
-		for (let py = -80; py <= 80; py+=20) {
-			newcx=charx+px;
-			newcy=chary+py;			
-			ldist=dist(newcx,newcy, leadx, leady);
-			if (ldist<healrange) {
-				pdanger=getdangerxy(newcx,newcy);
-				ppts.push([newcx,newcy,pdanger])
-				if (pdanger<saferate){
-					saferate=pdanger;
-					safex=newcx;
-					safey=newcy;
-				}
-			}			
+	for (let px = -120; px <= 120; px+=20) {
+		for (let py = -120; py <= 120; py+=20) {
+			newcx=safex+px;
+			newcy=safey+py;
+			if (can_move_to(newcx,newcy)) {
+				ldist=dist(newcx,newcy, leadx, leady);//leader dist
+				wdist=dist(newcx,newcy, character.x, character.y);//walk dist
+				if ((ldist<healrange) && (wdist<maxwalk)){ //withing walk range, and range from lead
+					pdanger=getdangerxy(newcx,newcy);				
+					if (pdanger<saferate){
+						saferate=pdanger;
+						safex=newcx;
+						safey=newcy;
+					}
+				}			
+			}
 		}
 	}
-	dangermin=9999999;
-	dangermax=0;	
-	for(let i = 0; i < ppts.length; i++){
-		danger=ppts[i][2];
-		if (danger>dangermax) dangermax=danger;
-		if (danger<dangermin) dangermin=danger;
-	}
-	for(let i = 0; i < ppts.length; i++){
-		pptx=ppts[i][0];
-		ppty=ppts[i][1];
-		danger=ppts[i][2];
-		cr=Math.floor(127+(127*(danger-dangermin)/(dangermax-dangermin)));
-		cg=Math.floor(127+(127*(dangermax-danger)/(dangermax-dangermin)));
-		crosshair(pptx,ppty,(cr*256+cg)*256);
-	}
-	move(safex,safey);
+	xmove(safex,safey);
 }
 
 var autoacceptinvitelist=["Beomagi"];

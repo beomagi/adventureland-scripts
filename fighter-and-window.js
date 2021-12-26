@@ -20,6 +20,10 @@ statusinfo.doingwhat="starting";
 statusinfo.goldtracking=[];
 statusinfo.lastenemy=lastenemytype;
 statusinfo.charlevel=character.level;
+statusinfo.mode="AI";
+modecolor_ai="#ff0000";
+modecolor_player="#00ff00";
+modecolor=modecolor_ai;
 
 
 parent.$("body").find("#genericnoobstatuswindow").remove();
@@ -28,19 +32,12 @@ setInterval(function(){
 	use_hp_or_mp_2();
 	loot();
     autopartyinvite();
+    updatewindow();
+
 
 	if(!attack_mode || character.rip || is_moving(character)) return;
 
-	if (!followleader) {
-		var target=get_targeted_monster();
-	} else {
-		var leadername=character.party;
-		var leaderobj=get_player(leadername);
-		var target = get_target_of(leaderobj);
-		var tarOftar = get_target_of(target);
-        doattacks=true;
-		if (!tarOftar) { doattacks=false; }
-	}
+	var target=get_targeted_monster();
 	
 	if(!target)
 	{
@@ -52,27 +49,17 @@ setInterval(function(){
         lastenemytype=get_entity(character.target).mtype;
     }
 	
-	fightercheckmove(target);
-	updatewindow();
+    if (statusinfo.mode=="AI") {
+	    fightercheckmove(target);
+    }
+	
 },1000/10); // Loops every 1/4 seconds.
 
 function fightercheckmove(target){
-	/////////////////////determine if following leader or target/////////////////////
-    if (followleader) {
-        var leaderobj=get_player(character.party)
-        var midx=leader_to_enemy_ratio*leaderobj.x+(1-leader_to_enemy_ratio)*target.x;
-        var midy=leader_to_enemy_ratio*leaderobj.y+(1-leader_to_enemy_ratio)*target.y;
-        var dx=midx-character.x;
-        var dy=midy-character.y;
-        var followx=midx;
-        var followy=midy;
-    } else {
-        var dx=target.x-character.x;
-        var dy=target.y-character.y;
-        var followx=target.x;
-        var followy=target.y;
-    }
-	/////////////////////determine if following leader or target/////////////////////
+    var dx=target.x-character.x;
+    var dy=target.y-character.y;
+    var followx=target.x;
+    var followy=target.y;
 
     if(!is_in_range(target))
     {
@@ -166,7 +153,7 @@ function rotateabout(targetx,targety,ogx,ogy,angle)
 }
 
 
-var autoinvitelist=["BeoNuka","BeoHP"];
+var autoinvitelist=["BeoNuka","BeoHP","PewPewMagoo"];
 var autoinvitelisttimer={};
 
 function autopartyinvite(){
@@ -199,7 +186,7 @@ function updatewindow()
         tempdiv.style.fontFamily="monospace";
         tempdiv.style.fontSize="1.1em";
         tempdiv.style.fontWeight=900;
-        tempdiv.style.zIndex=2147483647;
+        tempdiv.style.zIndex=2147483646;
         tempdiv.style.position="absolute";
         tempdiv.style.top="0px";
         tempdiv.style.left="0px";
@@ -215,7 +202,8 @@ function updatewindow()
 		//update statusdiv content
         updatestatusinfo();
         stext="";
-        stext+="Running Time: "+statusinfo.runtime+"<br/>";
+        stext+="Mode: "+"<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.togglemode()' style='display:inline-block;background-color:"+modecolor+"'>"+statusinfo.mode+"</div><br/>";
+        stext+="Running Time: "+statusinfo.runtime+"<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.resetstats()' style='display:inline-block;background-color:#f00'>[reset]</div><br/>";
         stext+="Gold Gain/Total: "+statusinfo.income+"/"+statusinfo.currentgold+"<br/>";
         stext+="Gold per minute: "+(60*statusinfo.goldrate).toFixed(2)+"<br/>";
         stext+="XP per minute: "+(60*statusinfo.xprate).toFixed(2)+"<br/>";
@@ -227,6 +215,29 @@ function updatewindow()
 
         statusdiv.innerHTML = stext;
 	}
+}
+
+function togglemode(){
+    if (statusinfo.mode == "AI") {
+        statusinfo.mode = "Manual"
+        modecolor=modecolor_player;
+    } else {
+        statusinfo.mode = "AI";
+        modecolor=modecolor_ai;
+    }
+}
+
+function resetstats(){
+    statusinfo.startgold=character.gold;
+    statusinfo.starttime=Date.now()/1000;
+    statusinfo.levelstarttime=Date.now()/1000;
+    statusinfo.startxp=character.xp;
+    statusinfo.doingwhat="starting";
+    statusinfo.goldtracking=[];
+    statusinfo.lastenemy=lastenemytype;
+    statusinfo.charlevel=character.level;
+    statuscloseDragElement();
+    statusdiv.onmousemove = null;
 }
 
 function updatestatusinfo(){
@@ -253,14 +264,14 @@ function updatestatusinfo(){
         p_maxhp=get_player(p_name).max_hp;
         p_mp=get_player(p_name).mp;
         p_maxmp=get_player(p_name).max_mp;
-        statusinfo.party+=p_name.padEnd(10,'_')+(p_hp+"/"+p_maxhp).padEnd(10)+(p_mp+"/"+p_maxmp).padEnd(10)+"<br/>";
+        statusinfo.party+=p_name.padEnd(12,'_')+(p_hp+"/"+p_maxhp).padEnd(10)+(p_mp+"/"+p_maxmp).padEnd(10)+"<br/>";
     }
     statusinfo.party=statusinfo.party.replace(/_/g,"&nbsp;");
 }
 
 //////////////modified from https://www.w3schools.com/howto/howto_js_draggable.asp////////////////
 function dragstatuswindow(elmnt) {    
-    elmnt.onmousedown = statusdragMouseDown;
+    elmnt.ondblclick = statusdragMouseDown;
 }
 function statusdragMouseDown(e) {
       e = e || window.event; e.preventDefault();
@@ -282,8 +293,9 @@ function statusDragging(e) {
       statusdiv.style.left = (statusdiv.offsetLeft - statuswindowpos1-statusmidx) + "px";
 }
 function statuscloseDragElement() {
-      statusdiv.onmousedown = statusdragMouseDown;
+      statusdiv.ondblclick = statusdragMouseDown;
       statusdiv.onmousemove = null;
+      statusdiv.onmousedown = null;
 }
 
 
