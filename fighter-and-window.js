@@ -9,7 +9,6 @@ var lastcasttime=new Date();
 var reduce_max_range=0.95;
 var statusdiv=false;
 var lastenemytype="";
-
 var statusinfo=new Object;
 var statuswindowpos1 = 0, statuswindowpos2 = 0, statuswindowpos3 = 0, statuswindowpos4 = 0;
 statusinfo.startgold=character.gold;
@@ -20,7 +19,10 @@ statusinfo.doingwhat="starting";
 statusinfo.goldtracking=[];
 statusinfo.lastenemy=lastenemytype;
 statusinfo.charlevel=character.level;
-statusinfo.mode="AI";
+statusinfo.mode="Manual";
+statusinfo.compoundium=null;
+statusinfo.compoundium_str="";
+statusinfo.currentlycompounding="-";
 modecolor_ai="#ff0000";
 modecolor_player="#00ff00";
 modecolor=modecolor_ai;
@@ -32,8 +34,8 @@ setInterval(function(){
 	use_hp_or_mp_2();
 	loot();
     autopartyinvite();
+    compoundium();
     updatewindow();
-
 
 	if(!attack_mode || character.rip || is_moving(character)) return;
 
@@ -54,6 +56,63 @@ setInterval(function(){
     }
 	
 },1000/10); // Loops every 1/4 seconds.
+
+function compoundium(){ //generate list of compoundable stuff
+    var accessories=["ringsj","hpbelt","hpamulet"];
+    var compoundpending={};
+    var inv_max=42;
+    for (var indx=0; indx<inv_max; indx++){
+        cur_item=character.items[indx];
+        if (cur_item){
+            if (accessories.indexOf(cur_item.name)>-1) {            
+                if (!(cur_item.name in compoundpending)) {
+                    compoundpending[cur_item.name]={};
+                }
+                if (!(cur_item.level in compoundpending[cur_item.name])) {
+                    compoundpending[cur_item.name][cur_item.level]=[];
+                }
+                compoundpending[cur_item.name][cur_item.level].push(indx);
+            }
+        }
+    }
+    statusinfo.compoundium=compoundpending;
+    statusinfo.compoundium_str=[];
+    for (let kname of Object.keys(statusinfo.compoundium)){
+        for (let klevel of Object.keys(statusinfo.compoundium[kname])){
+            if (statusinfo.compoundium[kname][klevel].length>=3){
+                var compoundinfoline=kname+"-L"+klevel+" : "+statusinfo.compoundium[kname][klevel].length;
+                statusinfo.compoundium_str+=compoundinfoline+"<br/>" 
+            }           
+        }
+    }
+}
+
+var currentlycompounding=false;
+function compoundlevel(itemlevel){
+    if (!currentlycompounding) {
+        for (let kname of Object.keys(statusinfo.compoundium)){
+            for (let klevel of Object.keys(statusinfo.compoundium[kname])){
+                if (klevel==itemlevel) {
+                    if (statusinfo.compoundium[kname][klevel].length>=3){
+                        statusinfo.currentlycompounding=kname+"-L"+klevel;
+                        idx1=statusinfo.compoundium[kname][klevel][0];
+                        idx2=statusinfo.compoundium[kname][klevel][1];
+                        idx3=statusinfo.compoundium[kname][klevel][2];
+                        currentlycompounding=true;                        
+                        compound(idx1,idx2,idx3,locate_item("cscroll0")).then(
+                            function(){
+                                currentlycompounding=false;
+                                statusinfo.currentlycompounding="-";
+                                compoundlevel(itemlevel);
+                                return;
+                            }
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
 
 function fightercheckmove(target){
     var dx=target.x-character.x;
@@ -208,11 +267,18 @@ function updatewindow()
         stext+="Gold per minute: "+(60*statusinfo.goldrate).toFixed(2)+"<br/>";
         stext+="XP per minute: "+(60*statusinfo.xprate).toFixed(2)+"<br/>";
         stext+="Time till level: "+statusinfo.time2level.toFixed(0)+"<br/>";
-        stext+="Kill all: "+statusinfo.lastenemy+"<br/>"
-        stext+="Party: <br/>"+statusinfo.party+"<br/>"
+        stext+="Kill all: "+statusinfo.lastenemy+"<br/>";
+        stext+="Party: <br/>"+statusinfo.party;
         stext+="----------------------------<br/>";
         stext+=statusinfo.doingwhat+"<br/>";
-
+        stext+="Compound: ";
+        stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(0)' style='display:inline-block;background-color:#8000a0'>L0</div>&nbsp;";
+        stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(1)' style='display:inline-block;background-color:#807000'>L1</div>&nbsp;";
+        stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(2)' style='display:inline-block;background-color:#8000a0'>L2</div>&nbsp;";
+        stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(3)' style='display:inline-block;background-color:#807000'>L3</div>&nbsp;";
+        stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(4)' style='display:inline-block;background-color:#8000a0'>L4</div>&nbsp;<br/>";
+        stext+=statusinfo.compoundium_str+"<br/>";
+        stext+="Currently Compounding: "+statusinfo.currentlycompounding+"<br/>";
         statusdiv.innerHTML = stext;
 	}
 }
