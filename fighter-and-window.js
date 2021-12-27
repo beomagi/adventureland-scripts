@@ -22,7 +22,7 @@ statusinfo.charlevel=character.level;
 statusinfo.mode="Manual";
 statusinfo.compoundium=null;
 statusinfo.compoundium_str="";
-statusinfo.currentlycompounding="-";
+statusinfo.currentlycompounding="";
 modecolor_ai="#ff0000";
 modecolor_player="#00ff00";
 modecolor=modecolor_ai;
@@ -76,7 +76,7 @@ function compoundium(){ //generate list of compoundable stuff
         }
     }
     statusinfo.compoundium=compoundpending;
-    statusinfo.compoundium_str=[];
+    statusinfo.compoundium_str="";
     for (let kname of Object.keys(statusinfo.compoundium)){
         for (let klevel of Object.keys(statusinfo.compoundium[kname])){
             if (statusinfo.compoundium[kname][klevel].length>=3){
@@ -102,7 +102,7 @@ function compoundlevel(itemlevel){
                         compound(idx1,idx2,idx3,locate_item("cscroll0")).then(
                             function(){
                                 currentlycompounding=false;
-                                statusinfo.currentlycompounding="-";
+                                statusinfo.currentlycompounding="";
                                 compoundlevel(itemlevel);
                                 return;
                             }
@@ -271,14 +271,18 @@ function updatewindow()
         stext+="Party: <br/>"+statusinfo.party;
         stext+="----------------------------<br/>";
         stext+=statusinfo.doingwhat+"<br/>";
-        stext+="Compound: ";
-        stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(0)' style='display:inline-block;background-color:#8000a0'>L0</div>&nbsp;";
-        stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(1)' style='display:inline-block;background-color:#807000'>L1</div>&nbsp;";
-        stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(2)' style='display:inline-block;background-color:#8000a0'>L2</div>&nbsp;";
-        stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(3)' style='display:inline-block;background-color:#807000'>L3</div>&nbsp;";
-        stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(4)' style='display:inline-block;background-color:#8000a0'>L4</div>&nbsp;<br/>";
-        stext+=statusinfo.compoundium_str+"<br/>";
-        stext+="Currently Compounding: "+statusinfo.currentlycompounding+"<br/>";
+        if (statusinfo.compoundium_str!==""){
+            stext+="Compound: ";
+            stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(0)' style='display:inline-block;background-color:#8000a0'>L0</div>&nbsp;";
+            stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(1)' style='display:inline-block;background-color:#807000'>L1</div>&nbsp;";
+            stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(2)' style='display:inline-block;background-color:#8000a0'>L2</div>&nbsp;";
+            stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(3)' style='display:inline-block;background-color:#807000'>L3</div>&nbsp;";
+            stext+="<div onmousedown='parent.$(\"#maincode\")[0].contentWindow.compoundlevel(4)' style='display:inline-block;background-color:#8000a0'>L4</div>&nbsp;<br/>";
+            stext+=statusinfo.compoundium_str+"<br/>";
+        }
+        if (statusinfo.currentlycompounding!==""){
+            stext+="Currently Compounding: "+statusinfo.currentlycompounding+"<br/>";
+        }
         statusdiv.innerHTML = stext;
 	}
 }
